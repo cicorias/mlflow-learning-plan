@@ -1,0 +1,52 @@
+[tools]
+python = "3.14"
+uv = "latest"
+azure-cli = "latest"
+databricks-cli = { version = "latest", exe = "databricks" }
+
+# Tasks below encode the post-`git clone` workflow.
+#
+# Convention: scripts live in ./scripts/<name>.sh — mise.toml only references
+# them, never embeds shell code. Edit the script file, not this file, when
+# changing behavior. New tasks: add the script, then a one-line task entry here.
+#
+# After cloning:
+#   mise install        # installs the [tools] above
+#   mise run setup      # syncs deps and creates .env from template
+
+[tasks.sync]
+description = "Install Python dependencies with uv into .venv"
+run = "uv sync"
+
+[tasks.env]
+description = "Create .env from .env.example if it does not already exist"
+run = "./scripts/env.sh"
+
+[tasks.setup]
+description = "Post-clone setup: install Python deps and create .env (run once after `mise install`)"
+depends = ["sync", "env"]
+run = "./scripts/setup.sh"
+
+[tasks."mlflow-server"]
+description = "Start the local MLflow tracking server (SQLite backend, filesystem artifacts, port 5000)"
+run = "./scripts/mlflow-server.sh"
+
+[tasks."mlflow-stop"]
+description = "Stop any local MLflow server started by `mise run mlflow-server`"
+run = "./scripts/mlflow-stop.sh"
+
+[tasks.verify]
+description = "Smoke-test: run both 00-setup notebooks against the configured tracking server"
+run = "./scripts/verify.sh"
+
+[tasks."run-classical"]
+description = "Execute every lesson in the classical ML track in order"
+run = "./scripts/run-classical.sh"
+
+[tasks."run-genai"]
+description = "Execute every lesson in the GenAI track in order (requires OPENAI_API_KEY in .env)"
+run = "./scripts/run-genai.sh"
+
+[tasks.clean]
+description = "Remove local MLflow state and generated artifacts (preserves .env)"
+run = "./scripts/clean.sh"
